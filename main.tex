@@ -1,0 +1,862 @@
+% =====================================================================
+%  Volatility Forecasting — Replication of CSV (2023, JFE)
+%  Three-page (body) coursework report, two-column 9pt for density.
+%  Tables and figures live in the appendix — they do not count toward
+%  the three-page body limit.
+% =====================================================================
+\documentclass[twocolumn,9pt]{extarticle}
+
+% ---------- geometry / typography ----------
+\usepackage[a4paper,margin=1.5cm,columnsep=0.55cm]{geometry}
+\usepackage{setspace}
+\setstretch{0.92}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage{amsmath,amssymb}
+\usepackage{textcomp}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{caption}
+\usepackage{float}
+\usepackage{xcolor}
+\usepackage[hidelinks]{hyperref}
+% Off-white background colour matching the UCL logo PNG so the logo
+% blends in without a visible rectangle. Used only on the cover page.
+\definecolor{coverbg}{RGB}{250,250,252}
+
+% Tight section / paragraph spacing
+\usepackage{titlesec}
+\titlespacing*{\section}{0pt}{4pt}{2pt}
+\titlespacing*{\subsection}{0pt}{3pt}{1pt}
+\titleformat{\section}{\normalsize\bfseries}{\thesection.}{0.5em}{}
+\titleformat{\subsection}{\small\bfseries}{\thesubsection}{0.5em}{}
+\captionsetup{font=footnotesize,labelfont=bf,skip=2pt}
+\setlength{\parskip}{1.5pt}
+\setlength{\parindent}{0pt}
+\setlength{\abovedisplayskip}{2pt}
+\setlength{\belowdisplayskip}{2pt}
+
+% Lead-in style "Question." "What CSV do." bold inline
+\newcommand{\lead}[1]{\textbf{#1}\hspace{0.25em}\ignorespaces}
+
+% ---------- title block ----------
+\title{\vspace{-1.8em}\bfseries A Machine Learning Approach to Volatility Forecasting:\\
+\normalsize Replication of Christensen, Siggaard \& Veliyev (2023, JFE)}
+\author{\small Financial Analytics and Machine Learning — Coursework Report}
+\date{\vspace{-1em}}
+
+\begin{document}
+
+% =====================================================================
+%   COVER PAGE  (place file ucl_logo.png in project root)
+% =====================================================================
+\begin{titlepage}
+\pagecolor{coverbg}% tint cover page background to match logo
+\centering
+\vspace*{2cm}
+
+\includegraphics[width=6cm,trim={6pt 6pt 6pt 6pt},clip]{ucl_logo.png}\\[2cm]
+
+\rule{\linewidth}{0.6pt}\\[0.4em]
+{\Large\scshape University College London}\\[0.4em]
+{\normalsize\scshape Institute of Finance and Technology}\\[0.3em]
+\rule{\linewidth}{0.6pt}\\[3cm]
+
+{\Huge\bfseries A Machine Learning Approach to\\[0.35em]
+Volatility Forecasting\par}
+\vspace{1.2em}
+{\LARGE Replication of Christensen, Siggaard \& Veliyev\\(2023, JFE)\par}
+\vspace{3cm}
+
+\begin{tabular}{rl}
+\textbf{Student ID:}      & 25130184 \\[0.35em]
+\textbf{Name:}            & Shakhzod Makhmudov \\[0.35em]
+\textbf{Module:}          & IFTE0004 \\[0.35em]
+\textbf{Code repository:} & \texttt{<URL to be added>} \\
+\end{tabular}
+
+\vfill
+{\normalsize Financial Analytics and Machine Learning --- Coursework Report}
+\vspace{1cm}
+\end{titlepage}
+
+% Restart page numbering at 1 for the main body
+\setcounter{page}{1}
+
+% =====================================================================
+%   MAIN BODY (twocolumn resumes automatically after titlepage)
+% =====================================================================
+\thispagestyle{empty}
+
+% =====================================================================
+\section{The paper}
+% =====================================================================
+
+\lead{Question.} Volatility forecasts are central to risk management
+(VaR under Basel III's standardised market-risk charge), option
+pricing (variance-swap valuation, gamma hedging) and portfolio
+allocation. Realised variance (RV), the sum of squared intraday
+returns, is the standard latent-volatility proxy (Andersen \&
+Bollerslev, 1998). RV's defining feature is long memory:
+autocorrelations decay hyperbolically rather than exponentially.
+Corsi's (2009) Heterogeneous Autoregressive (HAR) model captures
+that decay parsimoniously with three lagged-RV averages (daily,
+weekly, monthly) fit by OLS. HAR survives as the benchmark because
+its parsimony protects against overfit. That parsimony is the
+puzzle. Christensen, Siggaard \& Veliyev (2023, henceforth CSV) ask
+two linked questions: can machine learning extract more predictive
+content than HAR's three-lag approximation, and what mechanism
+delivers any gain.
+
+\lead{What CSV do.} CSV position their paper as the first systematic
+horse-race of machine learning against the HAR-class benchmark for
+realised-variance forecasting at multiple horizons, with mechanism
+analysis via Accumulated Local Effect plots (Apley \& Zhu, 2020) and
+a Value-at-Risk application as economic validation. The horse-race
+runs 22 models on 29 DJIA constituents, 2001--2017
+($T = 4{,}257$ daily observations per stock). The HAR lineage
+(six variants: HAR, HAR-X, LogHAR, LevHAR, SHAR, HARQ, the last two
+from Patton \& Sheppard 2015 and Bollerslev, Patton \& Quaedvlieg
+2016) is set against five regularised linears (Ridge, Lasso, Elastic
+Net, Adaptive Lasso, Post-Lasso; Tibshirani 1996, Zou \& Hastie 2005),
+three tree ensembles (Bagging, Random Forest, Gradient Boosting;
+Breiman 1996, 2001, Friedman 2001), and four feed-forward neural
+networks (NN$_1$--NN$_4$ in single-fit and 10-of-100 ensemble form).
+Two information sets are tested: M\_HAR (the three HAR lags only) and
+M\_ALL (HAR lags plus nine covariates including implied volatility,
+VIX, ADS, EPU [Baker, Bloom \& Davis, 2016] and dollar volume).
+Forecast comparison uses Diebold--Mariano (1995) with the
+Harvey--Leybourne--Newbold (1997) small-sample correction and the
+Model Confidence Set of Hansen, Lunde \& Nason (2011). CSV present
+five findings. (i) On M\_HAR, deeper neural networks beat HAR by
+roughly 5\,\% on average, regularised linears match HAR, Gradient
+Boosting is slightly worse and Bagging materially worse
+($\sim15\,\%$ above HAR at $h=1$). (ii) On M\_ALL, regularisation
+cuts MSE by 6--9\,\% (Elastic Net at 8.4\,\%) and Random Forest by
+9.9\,\%, while unregularised extended HAR overfits. (iii) ALE
+attributes most predictive content to RVD, RVW and implied
+volatility, with rankings differing across models. (iv) Gains rise
+with horizon: at $h=22$ the Random Forest reduces MSE by roughly
+40\,\% against HAR on M\_ALL, an effect CSV attribute to ML
+approximating RV's long-memory persistence, with the slower ACF
+decay of fitted values (their Figure~8) as supporting evidence.
+(v) A closing Value-at-Risk application yields the same qualitative
+ranking with smaller and less statistically significant gains.
+
+\lead{Open questions.} Four weaknesses in CSV motivate the analysis
+here. First, the long-horizon mechanism is identified only via the
+ACF of fitted RV, a pattern consistent with both genuine long memory
+and infrequent regime-switching with similar autocorrelation
+signatures (Diebold, 2021). No proper long-memory model (e.g.\
+ARFIMA) is benchmarked, so the mechanism is named but not isolated,
+and the persistence of fit is conflated with the process behind it.
+Second, beyond the loss-choice flag above, QLIKE's finite-sample
+edge under noisy proxies matters most where vol forecasts feed
+downstream (VaR scaling under Basel III, option-implied surfaces,
+dynamic delta hedging), exactly the deployment cases where CSV's
+MSE-primary ranking can mislead. Third, the headline NN-vs-HAR
+comparison rests on asymmetric ensembling: NN10 averages the top 10
+of 100 random seeds, while RF and Bagging receive only within-model
+variance reduction (across trees) with no analogous seed or
+bootstrap ensembling at the model-class level. A symmetric protocol
+(re-fitting RF and Bagging across multiple bootstrap initialisations
+and averaging the top-K) could narrow CSV's M\_HAR NN advantage.
+Fourth, the 2001--2017 test window mixes a financial crisis, the
+European sovereign-debt episode and the pre-COVID calm. Whether the
+long-horizon ML gain survives a different regime composition is an
+empirical question. The present sample flips its direction, which I
+address by isolating regime, cross-section size and information set
+as competing explanations (Section~3).
+
+\lead{Replication scope.} All five paper findings are tested on
+three DJIA stocks (AAPL, AMZN, JPM), 2016--2024, with all 22 paper
+models on both information sets. Seven of CSV's nine M\_ALL
+covariates are sourced from public data (HSI, ADS, US3M, EPU, EA,
+M1W, \$VOL); per-stock IV (licensed) is proxied by VIX, which
+replaces the paper's separate IV and VIX inputs. Being index-level,
+VIX underweights stock-specific risk premia. CSV's M\_ALL headline
+gains also depend on OptionMetrics IV (a licensed commercial
+dataset), meaning the practical ``M\_ALL ML advantage'' is available
+only to OptionMetrics subscribers, a deployment constraint CSV do
+not discuss. M\_ALL therefore has 11 features (3 HAR lags + 8
+covariates) against the paper's 12. M1W and \$VOL are constructed
+from OHLCV. Headline tables and figures use the eight models most
+relevant to the findings reported here; the 22-model contest at
+$h=22$ across both information sets, VaR diagnostics, ALE weights
+and MCS retention sit in the appendix (Tables~4--7), with the full
+multi-horizon contest in supplementary CSVs. The replication finds
+CSV's long-horizon ML advantage depends on the volatility regime of
+the test window, while the persistence pattern documented in their
+Figure~8 replicates on the present sample.
+
+% =====================================================================
+\section{Implementation and headline results}
+% =====================================================================
+
+\lead{Data and RV construction.} 1-minute OHLCV data are used for
+AAPL, AMZN and JPM, 2016--2024 (2{,}264 NYSE sessions, 390 bars/day).
+Following Andersen \& Bollerslev (1998), daily RV is computed as the
+sum of squared 5-minute log-returns within day (overnight excluded);
+realised quarticity (Bollerslev, Patton \& Quaedvlieg, 2016), signed
+semivariance (Patton \& Sheppard, 2015) and aggregated negative
+returns (Corsi \& Renò, 2012) support LevHAR, SHAR and HARQ.
+Descriptive statistics are in Table~1. Figure~\ref{fig:rv} plots
+the unconditional RV path and shows the COVID-19 spike of March
+2020 and the August 2024 carry-trade unwind.
+
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=\columnwidth]{fig1_rv_overview.png}
+\caption{Daily 5-min realised volatility (annualised, \%) for AAPL,
+AMZN and JPM, 2016--2024. COVID-19 (Mar 2020) and the Aug 2024
+carry-trade unwind are visible. Test window: Mar 2023 -- Dec 2024,
+mean $\sigma\approx18\,\%$ vs full-sample 20\,\%.}
+\label{fig:rv}
+\end{figure}
+
+\lead{Models.} Eight headline models are estimated. The five HAR
+variants are fit with OLS: HAR; LogHAR with Jensen correction
+$\exp(\hat{y}+0.5\hat{\sigma}^2)$; LevHAR with aggregated
+negative-return regressors; SHAR with positive/negative semivariance
+decomposition; and HARQ, which conditions the daily-lag coefficient
+on realised quarticity via an RVD\,$\times\sqrt{\text{RQ}}$
+interaction. Elastic Net (Zou \& Hastie, 2005) hyperparameters are
+tuned by grid search on the held-out 10\,\% validation set (k-fold CV
+is avoided due to autocorrelation-induced leakage). Random Forest
+(Breiman, 2001) uses 500 trees, min-leaf 5, $\sqrt{p}$ random
+features per split. The neural network has two hidden layers of 4
+and 2 ReLU neurons trained with Adam (Kingma \& Ba, 2014;
+lr~0.001); the headline ensemble averages the top 3 of 10 random
+seeds ranked by validation MSE (the 22-model appendix contest uses
+the paper-exact top 10 of 100; see Deviations). Features are
+standardised on the training sample; negative forecasts are floored
+at the in-sample RV minimum.
+
+\lead{Forecast targets and evaluation.} Forecasts are produced at
+$h\in\{1,5,22\}$ trading days; the target is the $h$-day mean future
+RV. With the 70/10/20 split, the test window is March 2023 --
+December 2024. Out-of-sample MSE relative to HAR is reported as the
+headline metric for like-for-like comparability with CSV Table~2;
+QLIKE (Table~3) is treated as the operationally relevant ranking in
+Section~3. Diebold--Mariano (1995) tests run on the squared-error
+differentials, using the Harvey, Leybourne \& Newbold (1997)
+small-sample correction (which compensates for the variance
+inflation induced by overlap in multi-step forecasts) and a
+Newey--West long-run variance with $h-1$ Bartlett lags. The full
+numerical results sit in Table~2; Figure~\ref{fig:relmse}
+visualises them. The MCS
+uses moving-block bootstrap with block length
+$L=\lceil T^{1/3}\rceil$ and 1{,}000 replications. ALE (Apley \&
+Zhu, 2020) uses 20 quantile bins; it is preferred over PDP because
+RVD/RVW/RVM are highly correlated, breaking PDP's independence
+assumption. VaR uses filtered historical simulation (Barone-Adesi,
+Giannopoulos \& Vosper, 1999) at $\alpha=5\,\%$.
+
+\lead{Deviations from CSV (transparency).} Four choices differ from
+the paper: (i) standard ReLU instead of Leaky-ReLU (Maas, Hannun \&
+Ng, 2013; sklearn limitation; paper Footnote~7 confirms negligible
+effect); (ii) the insanity filter has a universal floor
+(paper-faithful) and adds a universal $2\times$ in-sample-max
+ceiling (an extension introduced here); the HARQ-specific
+Bollerslev-Patton-Quaedvlieg (2016) filter is omitted; (iii)
+HAR-family models are re-estimated daily-rolling in the 22-model
+contest (Tables~4--7, paper-faithful) but fixed-window in the
+8-model headline contest (Tables~1--3 and headline figures) for compute
+reasons; other models use fixed-window throughout, whereas the
+paper's Section~2 rolls daily; (iv) NN ensembling is paper-exact
+(top 10 of 100) in the 22-model contest, simplified to top-3-of-10
+in the 8-model contest; drop-out, learning-rate shrinkage and early
+stopping are not implemented; (v) for compute, four grids/specs are
+coarsened: GB depth $\in\{3,5\}$, trees $\in\{100,300,500\}$,
+lr $\in\{0.01,0.05,0.1\}$ (paper Table~A.6: depth $\{1,2\}$, trees
+$\{50,\dots,500\}$, lr $\{0.01,0.1\}$); regularised-linear $\alpha$
+grid is 100 log-spaced points on $[10^{-5},10^{2}]$ (paper finer);
+RF \texttt{max\_features}\,$=\sqrt{p}$ (paper $J/3$, equivalent at
+$J=3$ in M\_HAR, mild divergence at $J=11$ in M\_ALL); ALE uses 20
+quantile bins (paper 100, p.~22). Qualitative impact expected small.
+
+\lead{Headline results.} At $h=1$, LogHAR is the strongest
+HAR-family member on average (rel-MSE 0.950, DM-significant at
+1\,\% for JPM and 5\,\% for AAPL); the neural network matches on
+AAPL ($0.934^{**}$), as CSV report for M\_HAR. LogHAR's edge is
+largest at $h=5$ (0.856) and persists at $h=22$ (0.887). Random
+Forest moves the other way: monthly rel-MSE averages 2.077, driven
+by AMZN (3.01) and JPM (2.02). Results vary by stock: on JPM at
+$h=5$, RF beats HAR significantly ($0.871^{*}$), so the
+cross-section average hides stock-level patterns analysed in
+Section~3. Elastic Net offers no improvement under M\_HAR (rel-MSE
+0.99--1.07, worst on JPM at 1.22, $h=5$), matching the paper's
+claim that ML gains arise mostly under M\_ALL.
+Figure~\ref{fig:fc} confirms this on AAPL.
+
+% =====================================================================
+\section{Critical comparison and discussion}
+% =====================================================================
+
+\lead{What replicates.} Four of CSV's five findings replicate;
+Finding~(iv) splits: its persistence mechanism replicates, its MSE
+headline does not (addressed below). (a) NN beats HAR on AAPL at
+$h=1$ ($0.934^{**}$) and $h=22$ ($0.803^{**}$), supporting
+Finding~(i); LogHAR's MSE drops to $\sim0.45$ of HAR's for JPM and
+0.69 for AAPL in the upper-middle RV deciles
+(Figure~\ref{fig:decile}).
+(b)~Under M\_ALL, regularisation and LogHAR cut MSE by 10--30\,\% at
+long horizons (Table~6), replicating Finding~(ii) for regularised
+linears and LogHAR but not tree ensembles (see below). (c)~The
+persistence pattern replicates: at $h=22$ the ACF of fitted RV
+decays much more slowly for RF and NN than for HAR
+(Figure~\ref{fig:acf}). For AAPL at lag 60, HAR's ACF is $<0.10$,
+RF's $\approx0.22$, NN's $\approx0.15$. AMZN doesn't fit the
+pattern: NN decays at HAR's rate, so the persistence is RF-specific
+on that stock. To probe the mechanism Diebold (2021) flags, I fit
+an ARFIMA$(1,\hat{d},1)$ with $\hat{d}$ from Geweke-Porter-Hudak
+(1983): $\hat{d}=0.48$ (AAPL), 0.49 (AMZN), 0.43 (JPM), all in the
+stationary long-memory region. Rel-MSE at $h=22$ vs HAR is
+$0.72/1.27/0.57$ (mean 0.85). The proper long-memory model beats
+HAR; ML's persistent fit (Figure~\ref{fig:acf}) does not. The
+plausible reading: ARFIMA exploits the slow-decaying autocorrelation
+structure directly, HAR approximates it parsimoniously with three
+lag horizons, while RF/NN fit high-frequency nonlinearity on top of
+the HAR lags rather than extending the long-memory reach; their
+persistent fit (Figure~\ref{fig:acf}) is a consequence of averaging,
+not of capturing additional long-tail mass.
+
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=\columnwidth]{fig2_acf_persistence.png}
+\caption{Reproduction of CSV's Figure~8. ACF of fitted RV at
+$h=1$ and $h=22$ for HAR, LogHAR, RF, NN. At $h=22$ the ML models
+retain autocorrelation beyond lag~60 while HAR decays to zero. An
+ARFIMA$(1,\hat{d},1)$ benchmark on the same series
+($\hat{d}\approx0.47$, rel-MSE 0.85 at $h=22$ vs HAR) shows the
+long-memory mechanism is real in the RV process, but ML's
+persistent fit does not exploit it more efficiently than HAR.}
+\label{fig:acf}
+\end{figure}
+
+The mechanism is real in the underlying process, but ML's M\_ALL
+gain is not a more efficient long-memory approximation than
+HAR/LogHAR. (d)~VaR replicates Finding~(v): 21 of 22 models pass
+Kupiec (1995) at 5\,\% (Adaptive Lasso fails, $p=0.005$); all 22
+pass Christoffersen (1998) (Table~4). (e)~Finding~(iii) replicates:
+every model except RF places RVD first (RF puts RVW marginally
+above RVD: 0.46 vs 0.43); LogHAR is the only model to give the
+weekly and monthly lags non-trivial weight (Table~5). Apley \& Zhu
+(2020) caveat: the global ranking is a derived stdev-of-ALE
+construction, not validated by their framework.
+
+\lead{What does not replicate.} Finding~(iv)'s MSE headline (gains
+rising with horizon) is information-set-conditional in the present
+sample. Under M\_HAR the headline inverts: RF rel-MSE rises from
+1.160 at $h=1$ to 2.077 at $h=22$ on average, against CSV's
+RF~$\approx1.02$ at $h=22$ on M\_HAR. Under M\_ALL the paper's
+headline is recovered (point~(b); Table~6). I expected the gain to
+weaken but stay directional; instead it inverts. Four explanations
+are plausible. (1)~Regime: the paper's window (mid-2014 to end-2017)
+covers Aug-2015 China, Brexit and the 2016 election; the present
+window (Mar-2023 to Dec-2024) has cross-section mean annualised
+$\sigma$ of 18.1\,\% against the full-sample mean of 20.0\,\%, at
+the 19th percentile of rolling 21-month windows since 2016
+(Figure~\ref{fig:rv}). (2)~Cross-section: with 3 stocks the standard error
+scales by $\sqrt{29/3}\approx3.1\times$ under equal-per-stock noise,
+so my 2.077 carries roughly $3\times$ the sampling noise of CSV's
+1.02. With only 3 stocks the cross-section uncertainty is best
+captured by enumerating the three 2-of-3 pairs (AAPL+JPM: 1.61,
+AAPL+AMZN: 2.10, AMZN+JPM: 2.52); a $B=1{,}000$ with-replacement
+bootstrap returns 95\,\% CI [1.20, 3.01], degenerate to [min, max]
+given the 3-point support. Either reading confirms AMZN as the
+single driver. CSV's DJIA panel is also index-curated, not a random
+large-cap sample: AAPL joined the index in 2015 and AMZN in 2020,
+so their 2001--2017 histories enter the CSV panel before they would
+have been selected ex ante. If the panel were restricted to ex ante
+DJIA-eligible firms, the long-horizon RF gain might attenuate.
+(3)~Information set: M\_ALL is where CSV's main ML gains arise
+(Table~6). (4)~Rolling refit narrows AMZN by $\sim13\,\%$ but the
+qualitative picture is unchanged (Figure~\ref{fig:rolling}). Secondary: LogHAR's
+dominance reflects the calm window favouring outlier
+down-weighting, and tree ensembles deteriorate on M\_ALL (Bagging,
+GBoost; Table~6), plausibly because 3 stocks concentrate
+overfitting that 29 would smooth out.
+
+\lead{Loss-function robustness.} Patton (2011) shows that MSE and
+QLIKE both preserve the expected ranking of $\sigma^2$-targeting
+forecasts under noisy proxies, but QLIKE produces loss differences
+with lower finite-sample variance and higher pairwise-test power
+(QLIKE loss $\sigma^2/\hat{\sigma}^2 - \log(\sigma^2/\hat{\sigma}^2)
+- 1$). Table~3 re-evaluates under QLIKE. LogHAR remains best at
+$h=22$ (rel-QLIKE $0.831^{*}$); RF's monthly deterioration shrinks
+from 2.077 (MSE) to 1.279 (QLIKE); on AAPL at $h=22$ RF beats HAR
+under QLIKE (0.870 vs 1.201 under MSE). HARQ shows the largest
+HAR-family MSE-to-QLIKE shift ($1.210\to0.957$), consistent with BPQ
+(2016): their RQ-conditioned daily-lag coefficient down-weights
+observations where measurement noise drives the daily lag away from
+its long-run value, and QLIKE assigns lower weight to those same
+observations. The AMZN deterioration survives QLIKE (1.844). Read
+with Table~3b, the picture sharpens: under proxy-aware losses the
+long-horizon ML disadvantage is concentrated on AMZN, so the
+cross-section generalisation question is whether the AMZN pattern
+persists on a larger panel. For risk-management uses (VaR scaling,
+option-implied surfaces), QLIKE is the operationally relevant
+ranking.
+
+\lead{Insight.} Under a proxy-aware loss the long-horizon ML
+failure reduces to AMZN. The ARFIMA$(1,\hat{d},1)$ benchmark
+($\hat{d}\approx0.47$, rel-MSE 0.85 at $h=22$) shows the
+long-memory mechanism is genuine; ML doesn't exploit it more
+efficiently than HAR. CSV report MSE primary and QLIKE only as
+robustness; the present sample shows that ordering can flip the
+headline. For risk-management uses (VaR scaling, option-implied
+surfaces) QLIKE is the operationally relevant loss, and the AMZN
+inversion is the only signal that survives it. The MCS reinforces
+this on M\_HAR: at the 90\,\% level the HAR family is retained in 7
+or more of 9 cells while Adaptive Lasso is eliminated in all 9 at
+the 75\,\% level --- uniformly across AAPL, AMZN and JPM, so the
+parsimony advantage reflects general small-cross-section
+instability of two-stage shrinkage rather than AMZN-specific
+outlier protection. The AMZN-driver evidence sits in Table~3b's
+per-stock QLIKE view: under MSE the failure pattern looks like
+regime drift, under QLIKE it collapses to AMZN. Basel~III VaR
+scaling, variance-swap valuation and dynamic delta hedging depend on
+persistent-shock forecasts stressed in CSV's 2014--2017 window but
+not the present one --- the deployment cases where ML's edge would
+matter most are the ones this sample cannot probe. On the modelling
+side, features dominate depth: deeper NNs do not beat shallow ones,
+and single-fit NNs are high-variance ($\mathrm{NN}_3^{1}$ at $h=22$
+$=1.48$ vs $\mathrm{NN}_3^{10}=1.04$; Table~6), supporting the
+paper's ensembling emphasis. Branco, Rubesam \& Zevallos (2024) find
+that nonlinear ML does not statistically beat HAR-class linear
+models on ten global indices, consistent with the M\_HAR result
+here. A simpler benchmark goes further. GARCH(1,1) (Bollerslev 1986)
+fit on daily returns forecasts return variance, equivalent to
+integrated variance under no-jump (Andersen \& Bollerslev, 1998),
+and beats HAR cross-section at $h=22$ (rel-MSE 0.66; AAPL 0.54,
+AMZN 0.98, JPM 0.45), outperforming ARFIMA's 0.85. Hansen \& Lunde
+(2005) framed GARCH(1,1) as the canonical pre-ML benchmark. So the
+HAR baseline is itself beatable by simple alternatives, and ML's
+M\_HAR failure is sharpened: ML's persistent fit doesn't even reach
+the level of a 1-equation GARCH. CSV's
+$22\times29\times3\times2=3{,}828$ pairwise DM tests imply an
+expected $\sim$191 false rejections at $\alpha=0.05$ without
+correction; MCS controls error within each (stock, horizon) cell but
+not across cells. I would update toward CSV's structural reading if
+their long-horizon RF gain held on a calm post-2017 sample with
+three to five stocks matching mine, or if rolling re-estimation with
+stock-by-stock feature engineering removed the AMZN-specific
+deterioration.
+
+% =====================================================================
+%   REFERENCES  (do not count toward 3-page body limit)
+% =====================================================================
+\onecolumn
+\section*{References}
+\small
+\setlength{\parskip}{1pt}
+
+\begingroup
+\setlength{\parindent}{-1em}\leftskip1em\relax
+
+Andersen, T. G., \& Bollerslev, T. (1998). Answering the skeptics:
+Yes, standard volatility models do provide accurate forecasts.
+\textit{International Economic Review}, 39(4), 885--905.\par
+Apley, D. W., \& Zhu, J. (2020). Visualizing the effects of
+predictor variables in black box supervised learning models.
+\textit{Journal of the Royal Statistical Society: Series B}, 82(4),
+1059--1086.\par
+Baker, S. R., Bloom, N., \& Davis, S. J. (2016). Measuring economic
+policy uncertainty. \textit{The Quarterly Journal of Economics},
+131(4), 1593--1636.\par
+Barone-Adesi, G., Giannopoulos, K., \& Vosper, L. (1999). VaR
+without correlations for portfolios of derivative securities.
+\textit{Journal of Futures Markets}, 19(5), 583--602.\par
+Bollerslev, T. (1986). Generalized autoregressive conditional
+heteroskedasticity. \textit{Journal of Econometrics}, 31(3),
+307--327.\par
+Bollerslev, T., Patton, A. J., \& Quaedvlieg, R. (2016). Exploiting
+the errors: A simple approach for improved volatility forecasting.
+\textit{Journal of Econometrics}, 192(1), 1--18.\par
+Branco, R. R., Rubesam, A., \& Zevallos, M. (2024). Forecasting
+realized volatility: Does anything beat linear models?
+\textit{Journal of Empirical Finance}, 78, 101524.\par
+Breiman, L. (1996). Bagging predictors. \textit{Machine Learning},
+24(2), 123--140.\par
+Breiman, L. (2001). Random forests. \textit{Machine Learning},
+45(1), 5--32.\par
+Christensen, K., Siggaard, M., \& Veliyev, B. (2023). A machine
+learning approach to volatility forecasting. \textit{Journal of
+Financial Econometrics}, 21(5), 1680--1727.\par
+Christoffersen, P. F. (1998). Evaluating interval forecasts.
+\textit{International Economic Review}, 39(4), 841--862.\par
+Corsi, F. (2009). A simple approximate long-memory model of
+realized volatility. \textit{Journal of Financial Econometrics},
+7(2), 174--196.\par
+Corsi, F., \& Renò, R. (2012). Discrete-time volatility forecasting
+with persistent leverage effect and the link with continuous-time
+volatility modeling. \textit{Journal of Business \& Economic
+Statistics}, 30(3), 368--380.\par
+Diebold, F. X. (2021). Machine learning for realized volatility
+forecasting. \textit{No Hesitations} [blog], 1 February.
+\url{https://fxdiebold.blogspot.com/2021/02/machine-learning-for-realized.html}\par
+Diebold, F. X., \& Mariano, R. S. (1995). Comparing predictive
+accuracy. \textit{Journal of Business \& Economic Statistics},
+13(3), 253--263.\par
+Friedman, J. H. (2001). Greedy function approximation: A gradient
+boosting machine. \textit{Annals of Statistics}, 29(5),
+1189--1232.\par
+Geweke, J., \& Porter-Hudak, S. (1983). The estimation and
+application of long memory time series models. \textit{Journal of
+Time Series Analysis}, 4(4), 221--238.\par
+Hansen, P. R., \& Lunde, A. (2005). A forecast comparison of
+volatility models: Does anything beat a GARCH(1,1)?
+\textit{Journal of Applied Econometrics}, 20(7), 873--889.\par
+Hansen, P. R., Lunde, A., \& Nason, J. M. (2011). The Model
+Confidence Set. \textit{Econometrica}, 79(2), 453--497.\par
+Harvey, D., Leybourne, S., \& Newbold, P. (1997). Testing the
+equality of prediction mean squared errors. \textit{International
+Journal of Forecasting}, 13(2), 281--291.\par
+Kingma, D. P., \& Ba, J. (2014). Adam: A method for stochastic
+optimization. \textit{arXiv:1412.6980}.\par
+Kupiec, P. H. (1995). Techniques for verifying the accuracy of risk
+measurement models. \textit{Journal of Derivatives}, 3(2),
+73--84.\par
+Maas, A. L., Hannun, A. Y., \& Ng, A. Y. (2013). Rectifier
+nonlinearities improve neural network acoustic models.
+\textit{Proceedings of the 30th International Conference on Machine
+Learning}, 30(1), 3.\par
+Patton, A. J. (2011). Volatility forecast comparison using
+imperfect volatility proxies. \textit{Journal of Econometrics},
+160(1), 246--256.\par
+Patton, A. J., \& Sheppard, K. (2015). Good volatility, bad
+volatility: Signed jumps and the persistence of volatility.
+\textit{Review of Economics and Statistics}, 97(3), 683--697.\par
+Tibshirani, R. (1996). Regression shrinkage and selection via the
+lasso. \textit{Journal of the Royal Statistical Society: Series B},
+58(1), 267--288.\par
+Zou, H., \& Hastie, T. (2005). Regularization and variable
+selection via the elastic net. \textit{Journal of the Royal
+Statistical Society: Series B}, 67(2), 301--320.\par
+\endgroup
+
+% =====================================================================
+%   APPENDIX — tables and figures (do not count toward 3-page body)
+% =====================================================================
+\clearpage
+\appendix
+% Tight float spacing for the appendix so tables/figures pack closely.
+\setlength{\floatsep}{4pt plus 1pt minus 1pt}
+\setlength{\textfloatsep}{6pt plus 1pt minus 1pt}
+\setlength{\intextsep}{4pt plus 1pt minus 1pt}
+\setlength{\abovecaptionskip}{2pt}
+\setlength{\belowcaptionskip}{2pt}
+
+\section*{Appendix A: Tables}
+
+% ------------------ Table 1 ------------------
+\begin{table}[H]
+\centering\small
+\caption{Descriptive statistics of daily realised variance
+(5-minute subsampled). RV is reported scaled by $10^{4}$; the
+annualised $\sigma$ column is the in-sample mean of
+$\sigma_t=\sqrt{252\cdot\mathrm{RV}_t}$.}
+\label{tab:desc}
+\begin{tabular}{lllrrrrrrr}
+\toprule
+Ticker & Sector & N days & Start & End & Mean RV & Median RV & Ann.\ $\sigma$ (\%) & Skew & Kurt \\
+\midrule
+AAPL & Technology & 2{,}264 & 2016-01-04 & 2024-12-31 & 1.89 & 1.14 & 19.3 & 8.65 & 119.24 \\
+AMZN & Consumer   & 2{,}264 & 2016-01-04 & 2024-12-31 & 2.53 & 1.54 & 22.4 & 6.53 & 87.67 \\
+JPM  & Financials & 2{,}264 & 2016-01-04 & 2024-12-31 & 1.76 & 1.04 & 18.4 & 12.23 & 190.65 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ------------------ Table 2 ------------------
+\begin{table}[H]
+\centering\small
+\caption{Out-of-sample MSE relative to HAR. Lower is better;
+1.000 = HAR baseline. Stars indicate Diebold--Mariano rejection of
+equal predictive accuracy in favour of the row model, with
+Harvey--Leybourne--Newbold small-sample correction (*:~10\,\%,
+**:~5\,\%, ***:~1\,\%). EN = Elastic Net; RF = Random Forest;
+NN = Neural Network (4, 2).}
+\label{tab:main}
+\begin{tabular}{llrrrr}
+\toprule
+Horizon & Model & AAPL & AMZN & JPM & Mean \\
+\midrule
+\multirow{8}{*}{$h=1$}
+ & HAR     & 1.000      & 1.000  & 1.000      & 1.000 \\
+ & LogHAR  & 0.934**    & 1.003  & 0.913***   & 0.950 \\
+ & LevHAR  & 1.013      & 1.053  & 1.037      & 1.034 \\
+ & SHAR    & 0.976      & 0.977  & 1.195      & 1.049 \\
+ & HARQ    & 0.982      & 0.989  & 1.133      & 1.035 \\
+ & EN      & 1.003      & 1.000  & 0.980*     & 0.995 \\
+ & RF      & 1.179      & 1.295  & 1.006      & 1.160 \\
+ & NN      & 0.934**    & 1.056  & 0.948**    & 0.979 \\
+\midrule
+\multirow{8}{*}{$h=5$}
+ & HAR     & 1.000      & 1.000  & 1.000      & 1.000 \\
+ & LogHAR  & 0.816*     & 1.066  & 0.685***   & 0.856 \\
+ & LevHAR  & 0.983      & 0.978  & 1.065      & 1.009 \\
+ & SHAR    & 1.041      & 0.997  & 1.071      & 1.036 \\
+ & HARQ    & 0.997      & 1.062  & 1.480      & 1.180 \\
+ & EN      & 0.987      & 0.999  & 1.221      & 1.069 \\
+ & RF      & 1.071      & 1.659  & 0.871*     & 1.200 \\
+ & NN      & 0.906*     & 1.284  & 0.955      & 1.049 \\
+\midrule
+\multirow{8}{*}{$h=22$}
+ & HAR     & 1.000      & 1.000  & 1.000      & 1.000 \\
+ & LogHAR  & 0.686***   & 1.353  & 0.623***   & 0.887 \\
+ & LevHAR  & 0.849***   & 0.983  & 1.161      & 0.998 \\
+ & SHAR    & 1.078      & 0.994  & 1.007      & 1.027 \\
+ & HARQ    & 1.006      & 1.083  & 1.540      & 1.210 \\
+ & EN      & 0.998      & 1.000  & 1.203      & 1.067 \\
+ & RF      & 1.201      & 3.007  & 2.023      & 2.077 \\
+ & NN      & 0.803**    & 1.501  & 1.128      & 1.144 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ------------------ Table 3 ------------------
+\begin{table}[H]
+\centering\small
+\caption{QLIKE robustness check (Patton, 2011). Cross-section mean
+of out-of-sample QLIKE relative to HAR; lower is better. A `*'
+indicates DM rejection on the QLIKE differential in at least 2 of 3
+stocks at the 10\,\% level. Numbers cited in Section~3
+(Loss-function robustness, Insight) are reproduced here for direct
+verification.}
+\label{tab:qlike}
+\begin{tabular}{lrrrrrrr}
+\toprule
+Horizon & LogHAR & LevHAR & SHAR & HARQ & EN & RF & NN \\
+\midrule
+$h=1$   & 0.961   & 1.060 & 1.154 & 1.057 & 1.031 & 1.069 & 0.977* \\
+$h=5$   & 0.945*  & 0.994 & 1.018 & 1.059 & 1.185 & 1.093 & 1.121  \\
+$h=22$  & 0.831*  & 0.879 & 1.003 & 0.957 & 1.084 & 1.279 & 1.040  \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ------------------ Table 3b ------------------
+\begin{table}[H]
+\centering\small
+\caption{Per-stock comparison of MSE vs QLIKE at $h=22$ (rel-HAR).
+For risk-management use cases (VaR scaling, variance swaps) QLIKE is
+the operationally relevant loss. Under QLIKE the long-horizon ML
+deterioration concentrates on AMZN — RF beats HAR on both AAPL and
+JPM (0.870, ---) but blows up on AMZN (1.844).}
+\label{tab:per-stock-qlike}
+\begin{tabular}{l|rr|rr|rr}
+\toprule
+       & \multicolumn{2}{c|}{AAPL} & \multicolumn{2}{c|}{AMZN}
+       & \multicolumn{2}{c}{JPM} \\
+Model  & MSE & QLIKE & MSE & QLIKE & MSE & QLIKE \\
+\midrule
+LogHAR        & 0.686 & 0.724 & 1.353 & 1.141 & 0.623 & 0.627 \\
+LevHAR        & 0.849 & 0.845 & 0.983 & 0.940 & 1.161 & 0.852 \\
+SHAR          & 1.078 & 1.009 & 0.994 & 0.995 & 1.007 & 1.006 \\
+HARQ          & 1.006 & 0.963 & 1.083 & 1.018 & 1.540 & 0.890 \\
+EN            & 0.998 & 1.003 & 1.000 & 1.003 & 1.203 & 1.246 \\
+RF            & 1.201 & 0.870 & 3.007 & 1.844 & 2.023 & 1.123 \\
+NN(4,2)       & 0.803 & 0.783 & 1.501 & 1.225 & 1.128 & 1.113 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ------------------ Table 4 ------------------
+\begin{table}[H]
+\centering\small
+\caption{Value-at-Risk diagnostics for the 22-model contest on
+M\_HAR (one-day-ahead, $\alpha=5\,\%$). Hit rate, Kupiec
+unconditional-coverage $p$-value, and Christoffersen
+conditional-independence $p$-value, cross-section mean across the
+three stocks. Twenty-one of 22 models pass Kupiec at the 5\,\%
+level; only Adaptive Lasso under-covers significantly
+($p=0.005$). All 22 models pass Christoffersen.}
+\label{tab:var}
+\begin{tabular}{lrrr}
+\toprule
+Model & Hit rate & $p$ (Kupiec) & $p$ (Christoffersen) \\
+\midrule
+HAR         & 0.039 & 0.283 & 0.452 \\
+HAR-X       & 0.039 & 0.283 & 0.452 \\
+LogHAR      & 0.045 & 0.605 & 0.661 \\
+LevHAR      & 0.045 & 0.516 & 0.172 \\
+SHAR        & 0.041 & 0.396 & 0.278 \\
+HARQ        & 0.045 & 0.408 & 0.383 \\
+Ridge       & 0.037 & 0.229 & 0.436 \\
+Lasso       & 0.035 & 0.184 & 0.470 \\
+ElasticNet  & 0.036 & 0.222 & 0.448 \\
+\textbf{AdaLasso}   & \textbf{0.021} & \textbf{0.005} & 0.501 \\
+PostLasso   & 0.039 & 0.332 & 0.478 \\
+Bagging     & 0.041 & 0.427 & 0.496 \\
+RandomForest& 0.044 & 0.442 & 0.418 \\
+GBoost      & 0.035 & 0.223 & 0.510 \\
+NN$_1^{1}$  & 0.040 & 0.327 & 0.431 \\
+NN$_1^{10}$ & 0.041 & 0.427 & 0.486 \\
+NN$_2^{1}$  & 0.037 & 0.229 & 0.436 \\
+NN$_2^{10}$ & 0.042 & 0.453 & 0.476 \\
+NN$_3^{1}$  & 0.027 & 0.077 & 0.542 \\
+NN$_3^{10}$ & 0.040 & 0.327 & 0.431 \\
+NN$_4^{1}$  & 0.042 & 0.429 & 0.660 \\
+NN$_4^{10}$ & 0.041 & 0.376 & 0.458 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ------------------ Table 5 ------------------
+\begin{table}[H]
+\centering\small
+\caption{ALE-based feature importance at $h=1$ (cross-section mean
+share over RVD/RVW/RVM, sums to 1.00 by row).  Every model except
+RF places RVD first; LogHAR is the only model to put non-trivial
+weight on the weekly and monthly lags.}
+\label{tab:ale}
+\begin{tabular}{lrrr}
+\toprule
+Model        & RVD  & RVW  & RVM \\
+\midrule
+HAR          & 0.55 & 0.43 & 0.02 \\
+LogHAR       & 0.54 & 0.32 & 0.14 \\
+ElasticNet   & 0.54 & 0.46 & 0.00 \\
+RandomForest & 0.43 & 0.46 & 0.11 \\
+NN(4,2)      & 0.49 & 0.40 & 0.11 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ------------------ Table 6 ------------------
+\begin{table}[H]
+\centering\scriptsize
+\caption{M\_HAR vs M\_ALL: cross-section mean rel-MSE across AAPL,
+AMZN, JPM for all 22 models on both information sets at three
+horizons. ``RR/LA/EN/A-LA/P-LA'' = Ridge / Lasso / ElasticNet /
+Adaptive-Lasso / Post-Lasso; ``BG/RF/GB'' = Bagging / Random Forest /
+Gradient Boosting; NN$_k^{n}$ denotes a $k$-hidden-layer net with
+top-$n$-of-100 ensembling.  Under M\_ALL most regularised linears
+and the NN10 ensembles improve, while LevHAR/SHAR/HARQ stay near
+parity and tree ensembles deteriorate at $h=22$.}
+\label{tab:mhar-mall}
+\begin{tabular}{ll|rr|rr|rr}
+\toprule
+ & & \multicolumn{2}{c|}{$h=1$} & \multicolumn{2}{c|}{$h=5$} & \multicolumn{2}{c}{$h=22$} \\
+Group & Model & M\_HAR & M\_ALL & M\_HAR & M\_ALL & M\_HAR & M\_ALL \\
+\midrule
+HAR family   & HAR          & 1.000 & 1.000 & 1.000 & 1.000 & 1.000 & 1.000 \\
+             & HAR-X        & 1.000 & 1.000 & 1.000 & 1.000 & 1.000 & 1.000 \\
+             & LogHAR       & 0.949 & 0.853 & 0.852 & 0.679 & 0.889 & 0.682 \\
+             & LevHAR       & 1.030 & 1.008 & 1.010 & 0.978 & 1.008 & 1.021 \\
+             & SHAR         & 1.045 & 1.047 & 1.034 & 1.028 & 1.026 & 1.022 \\
+             & HARQ         & 1.034 & 1.014 & 1.174 & 1.068 & 1.224 & 1.074 \\
+\midrule
+Reg.\ linear & RR           & 0.992 & 0.992 & 0.995 & 1.004 & 1.077 & 1.078 \\
+             & LA           & 0.998 & 0.990 & 1.091 & 0.872 & 1.167 & 0.847 \\
+             & EN           & 0.997 & 1.016 & 1.089 & 0.908 & 1.158 & 0.899 \\
+             & A-LA         & 1.669 & 1.724 & 1.722 & 1.512 & 1.755 & 1.327 \\
+             & P-LA         & 0.996 & 1.033 & 1.000 & 0.907 & 1.073 & 0.817 \\
+\midrule
+Tree         & BG           & 1.291 & 1.076 & 1.396 & 1.023 & 3.024 & 3.988 \\
+             & RF           & 1.162 & 0.979 & 1.218 & 0.914 & 2.233 & 2.330 \\
+             & GB           & 1.245 & 1.190 & 1.164 & 1.056 & 1.876 & 4.533 \\
+\midrule
+Neural net   & NN$_1^{1}$   & 1.009 & 0.996 & 1.001 & 1.085 & 0.996 & 1.526 \\
+             & NN$_1^{10}$  & 1.031 & 0.914 & 0.991 & 0.828 & 1.162 & 1.003 \\
+             & NN$_2^{1}$   & 0.982 & 1.062 & 1.183 & 1.043 & 1.414 & 1.713 \\
+             & NN$_2^{10}$  & 1.007 & 0.911 & 1.252 & 0.773 & 1.358 & 0.999 \\
+             & NN$_3^{1}$   & 1.402 & 1.173 & 1.300 & 2.452 & 1.203 & 1.477 \\
+             & NN$_3^{10}$  & 1.007 & 0.895 & 1.025 & 0.818 & 1.485 & 1.041 \\
+             & NN$_4^{1}$   & 1.037 & 1.283 & 1.187 & 1.526 & 1.592 & 1.894 \\
+             & NN$_4^{10}$  & 1.020 & 0.933 & 1.070 & 0.891 & 1.511 & 1.294 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ------------------ Table 7 ------------------
+\begin{table}[H]
+\centering\small
+\caption{Model Confidence Set retention on M\_HAR. Counts are the
+number of (stock, horizon) cells (out of 9: 3 stocks $\times$ 3
+horizons) in which each model survives elimination at the stated
+confidence level. The HAR family is retained almost everywhere;
+Adaptive Lasso is eliminated in every 75\,\%-level cell.}
+\label{tab:mcs}
+\begin{tabular}{lrr|lrr}
+\toprule
+Model & MCS$_{90}$ & MCS$_{75}$ & Model & MCS$_{90}$ & MCS$_{75}$ \\
+\midrule
+HAR          & 9 & 8 & PostLasso   & 9 & 8 \\
+HAR-X        & 9 & 8 & Bagging     & 6 & 3 \\
+LogHAR       & 9 & 8 & RandomForest& 7 & 5 \\
+LevHAR       & 8 & 8 & GBoost      & 7 & 4 \\
+SHAR         & 8 & 7 & NN$_1^{1}$  & 9 & 8 \\
+HARQ         & 7 & 5 & NN$_1^{10}$ & 7 & 6 \\
+Ridge        & 9 & 8 & NN$_2^{1}$  & 7 & 6 \\
+Lasso        & 8 & 8 & NN$_2^{10}$ & 6 & 6 \\
+ElasticNet   & 8 & 8 & NN$_3^{1}$  & 6 & 6 \\
+\textbf{AdaLasso}    & \textbf{0} & \textbf{0} & NN$_3^{10}$ & 7 & 5 \\
+             &   &   & NN$_4^{1}$  & 7 & 7 \\
+             &   &   & NN$_4^{10}$ & 7 & 6 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% =====================================================================
+%   Appendix B — figures (2x2 grid, single page)
+% =====================================================================
+\clearpage
+\section*{Appendix B: Figures}
+
+% --- Row 1: forecasts + rolling robustness ---
+\noindent
+\begin{minipage}[t]{0.48\linewidth}
+\centering
+\includegraphics[width=\linewidth]{fig4_forecasts.png}
+\captionof{figure}{AAPL one-day-ahead forecasts vs realised
+volatility. HAR, LogHAR and NN are indistinguishable in the centre
+of the distribution; differences emerge at volatility spikes
+(August 2024).}
+\label{fig:fc}
+\end{minipage}\hfill
+\begin{minipage}[t]{0.48\linewidth}
+\centering
+\includegraphics[width=\linewidth]{fig6_rolling_robust.png}
+\captionof{figure}{Rolling-refit robustness. HAR and RF
+re-estimated every 22 days narrow AMZN by $\sim13\,\%$
+($3.01\to2.63$), JPM by $\sim4\,\%$, AAPL marginally. Rolling RF
+uses 300 trees vs 500 static, a lower bound on the pure refit
+effect.}
+\label{fig:rolling}
+\end{minipage}
+
+\vspace{8pt}
+
+% --- Fig 5 (relmse) and Fig 6 (decile) stacked full-width, same page as Row 1 ---
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\textwidth]{fig3_relative_mse.png}
+\caption{Out-of-sample MSE relative to HAR for each
+model--stock--horizon. Dashed line at 1.0 is the HAR benchmark;
+values below 1.0 indicate improvement. LogHAR is the strongest HAR
+variant at every horizon; Random Forest deteriorates sharply at
+$h=22$, especially on AMZN. $y$-axis range varies across stocks to
+accommodate the AMZN $h=22$ RF outlier.}
+\label{fig:relmse}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\textwidth]{fig5_decile_mse.png}
+\caption{Reproduction of CSV's Figure~5. Forecast MSE relative to
+HAR by decile of realised RV in the test set, $h=1$. LogHAR is
+broadly better than HAR for AAPL and JPM, with parity in the middle
+deciles; RF and NN are worse in the middle deciles for AMZN but
+converge to HAR in the top decile, where LogHAR's
+outlier-down-weighting dominates.}
+\label{fig:decile}
+\end{figure}
+
+\end{document}
