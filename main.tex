@@ -22,11 +22,7 @@
 \usepackage{multirow}
 \usepackage{caption}
 \usepackage{float}
-\usepackage{xcolor}
 \usepackage[hidelinks]{hyperref}
-% Off-white background colour matching the UCL logo PNG so the logo
-% blends in without a visible rectangle. Used only on the cover page.
-\definecolor{coverbg}{RGB}{250,250,252}
 
 % Tight section / paragraph spacing
 \usepackage{titlesec}
@@ -55,7 +51,6 @@
 %   COVER PAGE  (place file ucl_logo.png in project root)
 % =====================================================================
 \begin{titlepage}
-\pagecolor{coverbg}% tint cover page background to match logo
 \centering
 \vspace*{2cm}
 
@@ -69,18 +64,17 @@
 {\Huge\bfseries A Machine Learning Approach to\\[0.35em]
 Volatility Forecasting\par}
 \vspace{1.2em}
-{\LARGE Replication of Christensen, Siggaard \& Veliyev\\(2023, JFE)\par}
+{\LARGE Replication of Christensen, Siggaard \& Veliyev\\(2023, Journal of Financial Econometrics)\par}
 \vspace{3cm}
 
 \begin{tabular}{rl}
 \textbf{Student ID:}      & 25130184 \\[0.35em]
 \textbf{Name:}            & Shakhzod Makhmudov \\[0.35em]
-\textbf{Module:}          & IFTE0004 \\[0.35em]
-\textbf{Code repository:} & \texttt{<URL to be added>} \\
+\textbf{Module:}          & IFTE0004 \\
 \end{tabular}
 
 \vfill
-{\normalsize Financial Analytics and Machine Learning --- Coursework Report}
+{\normalsize Code repository: \url{https://github.com/Shakhzod555/Financial-Analytics-and-Machine-Learning-.git}}
 \vspace{1cm}
 \end{titlepage}
 
@@ -187,7 +181,7 @@ covariates) against the paper's 12. M1W and \$VOL are constructed
 from OHLCV. Headline tables and figures use the eight models most
 relevant to the findings reported here; the 22-model contest at
 $h=22$ across both information sets, VaR diagnostics, ALE weights
-and MCS retention sit in the appendix (Tables~4--7), with the full
+and MCS retention sit in the appendix (Tables~\ref{tab:var}--\ref{tab:mcs}), with the full
 multi-horizon contest in supplementary CSVs. The replication finds
 CSV's long-horizon ML advantage depends on the volatility regime of
 the test window, while the persistence pattern documented in their
@@ -204,7 +198,7 @@ sum of squared 5-minute log-returns within day (overnight excluded);
 realised quarticity (Bollerslev, Patton \& Quaedvlieg, 2016), signed
 semivariance (Patton \& Sheppard, 2015) and aggregated negative
 returns (Corsi \& Renò, 2012) support LevHAR, SHAR and HARQ.
-Descriptive statistics are in Table~1. Figure~\ref{fig:rv} plots
+Descriptive statistics are in Table~\ref{tab:desc}. Figure~\ref{fig:rv} plots
 the unconditional RV path and shows the COVID-19 spike of March
 2020 and the August 2024 carry-trade unwind.
 
@@ -241,13 +235,13 @@ $h\in\{1,5,22\}$ trading days; the target is the $h$-day mean future
 RV. With the 70/10/20 split, the test window is March 2023 --
 December 2024. Out-of-sample MSE relative to HAR is reported as the
 headline metric for like-for-like comparability with CSV Table~2;
-QLIKE (Table~3) is treated as the operationally relevant ranking in
+QLIKE (Table~\ref{tab:qlike}) is treated as the operationally relevant ranking in
 Section~3. Diebold--Mariano (1995) tests run on the squared-error
 differentials, using the Harvey, Leybourne \& Newbold (1997)
 small-sample correction (which compensates for the variance
 inflation induced by overlap in multi-step forecasts) and a
 Newey--West long-run variance with $h-1$ Bartlett lags. The full
-numerical results sit in Table~2; Figure~\ref{fig:relmse}
+numerical results sit in Table~\ref{tab:main}; Figure~\ref{fig:relmse}
 visualises them. The MCS
 uses moving-block bootstrap with block length
 $L=\lceil T^{1/3}\rceil$ and 1{,}000 replications. ALE (Apley \&
@@ -264,8 +258,8 @@ effect); (ii) the insanity filter has a universal floor
 ceiling (an extension introduced here); the HARQ-specific
 Bollerslev-Patton-Quaedvlieg (2016) filter is omitted; (iii)
 HAR-family models are re-estimated daily-rolling in the 22-model
-contest (Tables~4--7, paper-faithful) but fixed-window in the
-8-model headline contest (Tables~1--3 and headline figures) for compute
+contest (Tables~\ref{tab:var}--\ref{tab:mcs}, paper-faithful) but fixed-window in the
+8-model headline contest (Tables~\ref{tab:desc}--\ref{tab:qlike} and headline figures) for compute
 reasons; other models use fixed-window throughout, whereas the
 paper's Section~2 rolls daily; (iv) NN ensembling is paper-exact
 (top 10 of 100) in the 22-model contest, simplified to top-3-of-10
@@ -305,7 +299,7 @@ Finding~(i); LogHAR's MSE drops to $\sim0.45$ of HAR's for JPM and
 0.69 for AAPL in the upper-middle RV deciles
 (Figure~\ref{fig:decile}).
 (b)~Under M\_ALL, regularisation and LogHAR cut MSE by 10--30\,\% at
-long horizons (Table~6), replicating Finding~(ii) for regularised
+long horizons (Table~\ref{tab:mhar-mall}), replicating Finding~(ii) for regularised
 linears and LogHAR but not tree ensembles (see below). (c)~The
 persistence pattern replicates: at $h=22$ the ACF of fitted RV
 decays much more slowly for RF and NN than for HAR
@@ -342,10 +336,10 @@ The mechanism is real in the underlying process, but ML's M\_ALL
 gain is not a more efficient long-memory approximation than
 HAR/LogHAR. (d)~VaR replicates Finding~(v): 21 of 22 models pass
 Kupiec (1995) at 5\,\% (Adaptive Lasso fails, $p=0.005$); all 22
-pass Christoffersen (1998) (Table~4). (e)~Finding~(iii) replicates:
+pass Christoffersen (1998) (Table~\ref{tab:var}). (e)~Finding~(iii) replicates:
 every model except RF places RVD first (RF puts RVW marginally
 above RVD: 0.46 vs 0.43); LogHAR is the only model to give the
-weekly and monthly lags non-trivial weight (Table~5). Apley \& Zhu
+weekly and monthly lags non-trivial weight (Table~\ref{tab:ale}). Apley \& Zhu
 (2020) caveat: the global ranking is a derived stdev-of-ALE
 construction, not validated by their framework.
 
@@ -354,7 +348,7 @@ rising with horizon) is information-set-conditional in the present
 sample. Under M\_HAR the headline inverts: RF rel-MSE rises from
 1.160 at $h=1$ to 2.077 at $h=22$ on average, against CSV's
 RF~$\approx1.02$ at $h=22$ on M\_HAR. Under M\_ALL the paper's
-headline is recovered (point~(b); Table~6). I expected the gain to
+headline is recovered (point~(b); Table~\ref{tab:mhar-mall}). I expected the gain to
 weaken but stay directional; instead it inverts. Four explanations
 are plausible. (1)~Regime: the paper's window (mid-2014 to end-2017)
 covers Aug-2015 China, Brexit and the 2016 election; the present
@@ -375,11 +369,11 @@ so their 2001--2017 histories enter the CSV panel before they would
 have been selected ex ante. If the panel were restricted to ex ante
 DJIA-eligible firms, the long-horizon RF gain might attenuate.
 (3)~Information set: M\_ALL is where CSV's main ML gains arise
-(Table~6). (4)~Rolling refit narrows AMZN by $\sim13\,\%$ but the
+(Table~\ref{tab:mhar-mall}). (4)~Rolling refit narrows AMZN by $\sim13\,\%$ but the
 qualitative picture is unchanged (Figure~\ref{fig:rolling}). Secondary: LogHAR's
 dominance reflects the calm window favouring outlier
 down-weighting, and tree ensembles deteriorate on M\_ALL (Bagging,
-GBoost; Table~6), plausibly because 3 stocks concentrate
+GBoost; Table~\ref{tab:mhar-mall}), plausibly because 3 stocks concentrate
 overfitting that 29 would smooth out.
 
 \lead{Loss-function robustness.} Patton (2011) shows that MSE and
@@ -387,7 +381,7 @@ QLIKE both preserve the expected ranking of $\sigma^2$-targeting
 forecasts under noisy proxies, but QLIKE produces loss differences
 with lower finite-sample variance and higher pairwise-test power
 (QLIKE loss $\sigma^2/\hat{\sigma}^2 - \log(\sigma^2/\hat{\sigma}^2)
-- 1$). Table~3 re-evaluates under QLIKE. LogHAR remains best at
+- 1$). Table~\ref{tab:qlike} re-evaluates under QLIKE. LogHAR remains best at
 $h=22$ (rel-QLIKE $0.831^{*}$); RF's monthly deterioration shrinks
 from 2.077 (MSE) to 1.279 (QLIKE); on AAPL at $h=22$ RF beats HAR
 under QLIKE (0.870 vs 1.201 under MSE). HARQ shows the largest
@@ -396,7 +390,7 @@ HAR-family MSE-to-QLIKE shift ($1.210\to0.957$), consistent with BPQ
 observations where measurement noise drives the daily lag away from
 its long-run value, and QLIKE assigns lower weight to those same
 observations. The AMZN deterioration survives QLIKE (1.844). Read
-with Table~3b, the picture sharpens: under proxy-aware losses the
+with Table~\ref{tab:per-stock-qlike}, the picture sharpens: under proxy-aware losses the
 long-horizon ML disadvantage is concentrated on AMZN, so the
 cross-section generalisation question is whether the AMZN pattern
 persists on a larger panel. For risk-management uses (VaR scaling,
@@ -417,7 +411,7 @@ or more of 9 cells while Adaptive Lasso is eliminated in all 9 at
 the 75\,\% level --- uniformly across AAPL, AMZN and JPM, so the
 parsimony advantage reflects general small-cross-section
 instability of two-stage shrinkage rather than AMZN-specific
-outlier protection. The AMZN-driver evidence sits in Table~3b's
+outlier protection. The AMZN-driver evidence sits in Table~\ref{tab:per-stock-qlike}'s
 per-stock QLIKE view: under MSE the failure pattern looks like
 regime drift, under QLIKE it collapses to AMZN. Basel~III VaR
 scaling, variance-swap valuation and dynamic delta hedging depend on
@@ -426,7 +420,7 @@ not the present one --- the deployment cases where ML's edge would
 matter most are the ones this sample cannot probe. On the modelling
 side, features dominate depth: deeper NNs do not beat shallow ones,
 and single-fit NNs are high-variance ($\mathrm{NN}_3^{1}$ at $h=22$
-$=1.48$ vs $\mathrm{NN}_3^{10}=1.04$; Table~6), supporting the
+$=1.48$ vs $\mathrm{NN}_3^{10}=1.04$; Table~\ref{tab:mhar-mall}), supporting the
 paper's ensembling emphasis. Branco, Rubesam \& Zevallos (2024) find
 that nonlinear ML does not statistically beat HAR-class linear
 models on ten global indices, consistent with the M\_HAR result
@@ -642,6 +636,10 @@ $h=22$  & 0.831*  & 0.879 & 1.003 & 0.957 & 1.084 & 1.279 & 1.040  \\
 \end{table}
 
 % ------------------ Table 3b ------------------
+% Numbering trick: force this table to show as "3b" without advancing the
+% counter, so subsequent tables remain 4, 5, 6, 7 as written in the body.
+\renewcommand{\thetable}{3b}
+\addtocounter{table}{-1}
 \begin{table}[H]
 \centering\small
 \caption{Per-stock comparison of MSE vs QLIKE at $h=22$ (rel-HAR).
@@ -666,6 +664,8 @@ NN(4,2)       & 0.803 & 0.783 & 1.501 & 1.225 & 1.128 & 1.113 \\
 \bottomrule
 \end{tabular}
 \end{table}
+% Restore default table numbering (\arabic{table}) for tables 4 onward.
+\renewcommand{\thetable}{\arabic{table}}
 
 % ------------------ Table 4 ------------------
 \begin{table}[H]
